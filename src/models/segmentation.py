@@ -1,7 +1,19 @@
 import os
 import numpy as np
+import tensorflow as tf
 from keras import layers, models
 from keras.utils import load_img, img_to_array
+import matplotlib.pyplot as plt
+
+def dice_loss(y_true, y_pred):
+    smooth = 1e-6
+    intersection = tf.reduce_sum(y_true * y_pred)
+    union = tf.reduce_sum(y_true) + tf.reduce_sum(y_pred)
+    return 1 - (2. * intersection + smooth) / (union + smooth)
+def combined_loss(y_true, y_pred):
+    bce = tf.keras.losses.binary_crossentropy(y_true, y_pred)
+    dice = dice_loss(y_true, y_pred)
+    return bce + dice
 
 def unet_model(input_size=(128, 128, 3), num_classes=1):
     inputs = layers.Input(input_size)
@@ -38,13 +50,12 @@ input_size = (128, 128, 3)
 num_classes = 1
 model = unet_model(input_size=input_size, num_classes=num_classes)
 
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+model.compile(optimizer='adam', loss=combined_loss, metrics=['accuracy'])
 model.summary()
 
 def load_image_mask(image_path, mask_path, target_size=(128, 128)):
     image = load_img(image_path, target_size=target_size)
     mask = load_img(mask_path, target_size=target_size, color_mode='grayscale')
-    
     image = img_to_array(image) / 255.0
     mask = img_to_array(mask) / 255.0
     return image, mask
@@ -52,7 +63,6 @@ def load_image_mask(image_path, mask_path, target_size=(128, 128)):
 def get_image_mask_paths(images_dir, masks_dir):
     image_paths = [os.path.join(images_dir, fname) for fname in os.listdir(images_dir) if fname.endswith('.jpg')]
     mask_paths = [os.path.join(masks_dir, fname) for fname in os.listdir(masks_dir) if fname.endswith('.jpg')]
-    
     return image_paths, mask_paths
 
 train_images_dir = "../../data/processed/train_images"
@@ -68,6 +78,17 @@ train_masks = np.array([load_image_mask(img, mask)[1] for img, mask in zip(train
 val_images = np.array([load_image_mask(img, mask)[0] for img, mask in zip(val_image_paths, val_mask_paths)])
 val_masks = np.array([load_image_mask(img, mask)[1] for img, mask in zip(val_image_paths, val_mask_paths)])
 
-model.fit(train_images, train_masks, validation_data=(val_images, val_masks), batch_size=32, epochs=6)
+history = model.fit(train_images, train_masks, 
+                    validation_data=(val_images, val_masks), 
+                    batch_size=32, epochs=10)
 
-model.save('../../models/unet_model_128x128.keras')
+model.save('../../models/unet_model_128x128_2.keras')
+
+# # Display Training Results
+# plt.plot(history.history['loss'], label='Loss')
+# plt.plot(history.history['val_loss'], label='Validation Loss')
+# plt.title('Loss Over Epochs')
+# plt.xlabel('Epochs')
+# plt.ylabel('Loss')
+# plt.legend()
+# plt.show()

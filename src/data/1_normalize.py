@@ -19,7 +19,7 @@ def resize_image_with_aspect_ratio(image_path, target_size):
             new_height = target_size[1]
             new_width = int(target_size[1] * aspect_ratio)
 
-        img_resized = img.resize((new_width, new_height), Image.ANTIALIAS)
+        img_resized = img.resize((new_width, new_height), Image.LANCZOS)
         new_img = Image.new("RGB", target_size, (0, 0, 0))
         new_img.paste(img_resized, ((target_size[0] - new_width) // 2, (target_size[1] - new_height) // 2))
 
@@ -39,7 +39,6 @@ def process(input_dir, output_dir):
             if resized_img:
                 output_path = os.path.join(output_dir, image_name)
                 resized_img.save(output_path)
-                print(f"Resized and saved: {image_name}")
 
 process("../../data/processed/images", "../../data/processed/images_resized")
 process("../../data/processed/masks", "../../data/processed/masks_resized")
