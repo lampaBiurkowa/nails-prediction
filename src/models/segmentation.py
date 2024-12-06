@@ -25,11 +25,21 @@ def unet_model(input_size=(128, 128, 3), num_classes=1):
     c2 = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(p1)
     c2 = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(c2)
     p2 = layers.MaxPooling2D((2, 2))(c2)
+    
+    c3 = layers.Conv2D(256, (3, 3), activation='relu', padding='same')(p2)
+    c3 = layers.Conv2D(256, (3, 3), activation='relu', padding='same')(c3)
+    p3 = layers.MaxPooling2D((2, 2))(c3)
 
-    c4 = layers.Conv2D(256, (3, 3), activation='relu', padding='same')(p2)
-    c4 = layers.Conv2D(256, (3, 3), activation='relu', padding='same')(c4)
+    c4 = layers.Conv2D(512, (3, 3), activation='relu', padding='same')(p3)
+    c4 = layers.Conv2D(512, (3, 3), activation='relu', padding='same')(c4)
 
-    u8 = layers.UpSampling2D((2, 2))(c4)
+    u7 = layers.UpSampling2D((2, 2))(c4)
+    u7 = layers.Conv2D(256, (2, 2), activation='relu', padding='same')(u7)
+    u7 = layers.concatenate([u7, c3])
+    c7 = layers.Conv2D(256, (3, 3), activation='relu', padding='same')(u7)
+    c7 = layers.Conv2D(256, (3, 3), activation='relu', padding='same')(c7)
+
+    u8 = layers.UpSampling2D((2, 2))(c7)
     u8 = layers.Conv2D(128, (2, 2), activation='relu', padding='same')(u8)
     u8 = layers.concatenate([u8, c2])
     c8 = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(u8)
